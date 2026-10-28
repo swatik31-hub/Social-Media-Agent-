@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SocialMind — Agentic AI Social Media Assistant</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --card: #222536;
+    --border: #2e3250; --text: #e8eaf6; --muted: #8b92b8;
+    --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b;
+    --warn: #ffa94d; --success: #51cf66;
+    --grad1: linear-gradient(135deg, #6c63ff 0%, #48c6ef 100%);
+    --grad2: linear-gradient(135deg, #00d4aa 0%, #6c63ff 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.65; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-icon { width: 36px; height: 36px; background: var(--grad1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; -webkit-text-fill-color: white; }
+  .header-badge { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent2); }
+
+  /* ── Nav Tabs ── */
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 4px; padding: 0 24px; overflow-x: auto; }
+  .tab-btn { background: none; border: none; color: var(--muted); padding: 14px 16px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Main ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Page Title ── */
+  .page-title { margin-bottom: 24px; }
+  .page-title h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-title p { color: var(--muted); font-size: 13px; }
+
+  /* ── Cards / Grid ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; }
+
+  /* ── Form Elements ── */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  input, select, textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: inherit; transition: border 0.2s; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--card); }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--grad1); color: white; }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-success { background: var(--success); color: #000; }
+  .btn-danger  { background: var(--accent3); color: white; }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  /* ── Output / Result areas ── */
+  .output-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; min-height: 120px; white-space: pre-wrap; font-size: 13px; line-height: 1.7; color: var(--text); margin-top: 16px; }
+  .output-box h2, .output-box h3 { color: var(--accent); margin: 12px 0 6px; }
+  .output-box strong { color: var(--accent2); }
+  .output-box em { color: var(--muted); }
+
+  /* ── Spinner ── */
+  .spinner { display: none; width: 22px; height: 22px; border: 3px solid rgba(108,99,255,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading .spinner { display: inline-block; }
+  .loading .btn-text { display: none; }
+
+  /* ── Hashtag chips ── */
+  .hashtag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .hashtag-chip { background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.35); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--accent); cursor: pointer; transition: all 0.15s; }
+  .hashtag-chip:hover { background: rgba(108,99,255,0.3); }
+
+  /* ── Stats cards ── */
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 700; background: var(--grad1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  /* ── Calendar table ── */
+  .cal-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 14px; }
+  .cal-table th { background: var(--surface); color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  .cal-table td { padding: 9px 10px; border-bottom: 1px solid rgba(46,50,80,0.5); }
+  .cal-table tr:hover td { background: rgba(108,99,255,0.06); }
+  .platform-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .pb-instagram { background: rgba(255,100,150,0.15); color: #ff6496; }
+  .pb-twitter   { background: rgba(29,161,242,0.15);  color: #1da1f2; }
+  .pb-linkedin  { background: rgba(0,119,181,0.15);   color: #0077b5; }
+  .pb-facebook  { background: rgba(24,119,242,0.15);  color: #1877f2; }
+  .pb-tiktok    { background: rgba(0,212,170,0.15);   color: #00d4aa; }
+  .pb-default   { background: rgba(108,99,255,0.15);  color: var(--accent); }
+
+  /* ── Approval banner ── */
+  .approval-banner { background: rgba(255,169,77,0.12); border: 1px solid rgba(255,169,77,0.4); border-radius: 10px; padding: 14px 18px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .approval-banner .banner-text { color: var(--warn); font-size: 13px; }
+  .approval-actions { display: flex; gap: 8px; }
+
+  /* ── Sentiment bar ── */
+  .sentiment-bar { height: 8px; border-radius: 4px; background: var(--surface); overflow: hidden; margin-top: 6px; display: flex; }
+  .sb-pos { background: var(--success); }
+  .sb-neu { background: var(--warn); }
+  .sb-neg { background: var(--accent3); }
+
+  /* ── Analytics bars ── */
+  .analytics-bar-wrap { margin-bottom: 10px; }
+  .analytics-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .analytics-bar-track { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+  .analytics-bar-fill  { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  /* ── Chat ── */
+  .chat-container { height: 420px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; scroll-behavior: smooth; }
+  .chat-msg { max-width: 78%; margin-bottom: 14px; }
+  .chat-msg.user { margin-left: auto; text-align: right; }
+  .chat-bubble { padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6; display: inline-block; white-space: pre-wrap; text-align: left; }
+  .user .chat-bubble   { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+  .bot .chat-bubble    { background: var(--card); color: var(--text); border-bottom-left-radius: 4px; }
+  .chat-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .chat-input-row { display: flex; gap: 10px; }
+  .chat-input-row input { flex: 1; }
+
+  /* ── Suggestion chips ── */
+  .suggestion-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Notice ── */
+  .notice { background: rgba(0,212,170,0.08); border: 1px solid rgba(0,212,170,0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--accent2); margin-bottom: 16px; }
+  .notice-warn { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.3); color: var(--accent3); }
+
+  /* ── Section divider ── */
+  .section-gap { height: 24px; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📱</div>
+    SocialMind
+  </div>
+  <div class="header-badge">⚡ Powered by IBM Granite LLM</div>
+</header>
+
+<nav class="nav" id="mainNav">
+  <button class="tab-btn active" data-tab="generator">✍️ Content Generator</button>
+  <button class="tab-btn" data-tab="campaign">📅 Campaign Planner</button>
+  <button class="tab-btn" data-tab="trends">📈 Trend Analyzer</button>
+  <button class="tab-btn" data-tab="chatbot">💬 AI Chatbot</button>
+  <button class="tab-btn" data-tab="analytics">📊 Analytics</button>
+  <button class="tab-btn" data-tab="about">ℹ️ About</button>
+</nav>
+
+<main>
+
+  <!-- ══════════════ TAB 1: CONTENT GENERATOR ══════════════ -->
+  <div class="tab-panel active" id="tab-generator">
+    <div class="page-title">
+      <h2>✍️ AI Content Generator</h2>
+      <p>Generate personalized social media posts, captions, and hashtags powered by IBM Granite LLM</p>
+    </div>
+    <div class="notice">All generated posts require human approval before publishing. Review carefully before using.</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Brand Details</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Brand Name *</label>
+            <input id="g-brand" type="text" placeholder="e.g. TechVibe"/>
+          </div>
+          <div class="form-group">
+            <label>Industry *</label>
+            <input id="g-industry" type="text" placeholder="e.g. E-commerce"/>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Platform *</label>
+            <select id="g-platform">
+              <option>Instagram</option>
+              <option>Twitter / X</option>
+              <option>LinkedIn</option>
+              <option>Facebook</option>
+              <option>TikTok</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Brand Tone</label>
+            <select id="g-tone">
+              <option>Professional</option>
+              <option>Casual & Friendly</option>
+              <option>Witty & Humorous</option>
+              <option>Inspirational</option>
+              <option>Educational</option>
+              <option>Luxury / Premium</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Target Audience</label>
+          <input id="g-audience" type="text" placeholder="e.g. Young professionals aged 25–35"/>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Campaign Goal</label>
+            <select id="g-goal">
+              <option>Brand Awareness</option>
+              <option>Lead Generation</option>
+              <option>Engagement</option>
+              <option>Sales / Conversion</option>
+              <option>Education</option>
+              <option>Product Launch</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Est. Audience Size</label>
+            <input id="g-audience-size" type="number" placeholder="10000" min="100"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Competitor Brands (optional)</label>
+          <input id="g-competitors" type="text" placeholder="e.g. Competitor A, Competitor B"/>
+        </div>
+
+        <button class="btn btn-primary" id="genPostBtn" onclick="generatePosts()">
+          <span class="btn-text">🚀 Generate Posts</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+
+      <div>
+        <div class="card" id="hashtagCard" style="display:none; margin-bottom:16px;">
+          <div class="card-title">🏷️ Generated Hashtags</div>
+          <div class="hashtag-list" id="hashtagList"></div>
+        </div>
+
+        <div class="card" id="engagementCard" style="display:none; margin-bottom:16px;">
+          <div class="card-title">📊 Estimated Engagement</div>
+          <div class="grid-3" id="engagementStats"></div>
+          <p style="margin-top:10px; font-size:11px; color:var(--warn)">⚠️ Estimated figures — validate with real analytics</p>
+        </div>
+
+        <div id="approvalBanner" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div id="postOutput" class="output-box" style="display:none;"></div>
+  </div>
+
+
+  <!-- ══════════════ TAB 2: CAMPAIGN PLANNER ══════════════ -->
+  <div class="tab-panel" id="tab-campaign">
+    <div class="page-title">
+      <h2>📅 Campaign Planner</h2>
+      <p>Generate a full campaign strategy with content calendar and posting schedule</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Campaign Details</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Brand Name *</label>
+            <input id="c-brand" type="text" placeholder="e.g. GreenLeaf Co."/>
+          </div>
+          <div class="form-group">
+            <label>Industry *</label>
+            <input id="c-industry" type="text" placeholder="e.g. Sustainability"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Platforms (comma-separated)</label>
+          <input id="c-platforms" type="text" placeholder="Instagram, LinkedIn, Facebook"/>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Campaign Goal</label>
+            <select id="c-goal">
+              <option>Brand Awareness</option>
+              <option>Lead Generation</option>
+              <option>Product Launch</option>
+              <option>Sales / Conversion</option>
+              <option>Community Building</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Campaign Period</label>
+            <select id="c-period">
+              <option>1 week</option>
+              <option selected>2 weeks</option>
+              <option>1 month</option>
+              <option>3 months</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Target Audience</label>
+            <input id="c-audience" type="text" placeholder="e.g. Eco-conscious millennials"/>
+          </div>
+          <div class="form-group">
+            <label>Budget Range</label>
+            <select id="c-budget">
+              <option>Under $500</option>
+              <option>$500 – $2,000</option>
+              <option>$2,000 – $10,000</option>
+              <option>$10,000+</option>
+              <option>Not specified</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Competitor Brands (optional)</label>
+          <input id="c-competitors" type="text" placeholder="e.g. Patagonia, EcoWear"/>
+        </div>
+
+        <button class="btn btn-primary" id="genCampaignBtn" onclick="generateCampaign()">
+          <span class="btn-text">📅 Build Campaign</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+
+      <div>
+        <div class="card" id="calendarCard" style="display:none;">
+          <div class="card-title">📆 Content Calendar</div>
+          <div style="overflow-x:auto;">
+            <table class="cal-table" id="calendarTable">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Platform</th><th>Content Type</th><th>Best Time</th><th>Goal</th>
+                </tr>
+              </thead>
+              <tbody id="calendarBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="campaignOutput" class="output-box" style="display:none;"></div>
+  </div>
+
+
+  <!-- ══════════════ TAB 3: TREND ANALYZER ══════════════ -->
+  <div class="tab-panel" id="tab-trends">
+    <div class="page-title">
+      <h2>📈 Trend Analyzer</h2>
+      <p>Analyze current social media trends, audience sentiment, and competitor strategies</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Analysis Parameters</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Industry</label>
+            <input id="t-industry" type="text" placeholder="e.g. Fashion, FinTech, Health"/>
+          </div>
+          <div class="form-group">
+            <label>Platform</label>
+            <select id="t-platform">
+              <option>All Platforms</option>
+              <option>Instagram</option>
+              <option>Twitter / X</option>
+              <option>LinkedIn</option>
+              <option>Facebook</option>
+              <option>TikTok</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Region / Market</label>
+          <select id="t-region">
+            <option>Global</option>
+            <option>North America</option>
+            <option>Europe</option>
+            <option>Asia Pacific</option>
+            <option>South Asia</option>
+            <option>Middle East</option>
+            <option>Latin America</option>
+            <option>Africa</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Competitor Post Samples (for sentiment analysis)</label>
+          <textarea id="t-competitor-posts" placeholder="Paste competitor social media posts here for sentiment analysis..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="trendBtn" onclick="analyzeTrends()">
+          <span class="btn-text">🔍 Analyze Trends</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+
+      <div>
+        <div class="card" id="sentimentCard" style="display:none;">
+          <div class="card-title">🎭 Competitor Sentiment</div>
+          <div id="sentimentResult"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="trendsOutput" class="output-box" style="display:none;"></div>
+  </div>
+
+
+  <!-- ══════════════ TAB 4: AI CHATBOT ══════════════ -->
+  <div class="tab-panel" id="tab-chatbot">
+    <div class="page-title">
+      <h2>💬 AI Social Media Chatbot</h2>
+      <p>Ask anything about social media strategy, best practices, content ideas, and more</p>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Brand Context (optional)</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Brand Name</label>
+              <input id="ch-brand" type="text" placeholder="Your brand name"/>
+            </div>
+            <div class="form-group">
+              <label>Industry</label>
+              <input id="ch-industry" type="text" placeholder="Your industry"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Platform</label>
+              <select id="ch-platform">
+                <option>Instagram</option>
+                <option>Twitter / X</option>
+                <option>LinkedIn</option>
+                <option>Facebook</option>
+                <option>TikTok</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Goal</label>
+              <select id="ch-goal">
+                <option>Brand Awareness</option>
+                <option>Engagement</option>
+                <option>Lead Generation</option>
+                <option>Sales</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💡 Suggested Questions</div>
+          <div class="suggestion-chips">
+            <div class="chip" onclick="setQuery('What are the best times to post on Instagram?')">Best posting times?</div>
+            <div class="chip" onclick="setQuery('How do I grow my LinkedIn following organically?')">Grow LinkedIn?</div>
+            <div class="chip" onclick="setQuery('What content types get the most engagement on TikTok?')">TikTok content?</div>
+            <div class="chip" onclick="setQuery('How to write a compelling CTA for social media?')">Write CTA?</div>
+            <div class="chip" onclick="setQuery('What is a good engagement rate benchmark for Instagram?')">Engagement benchmarks?</div>
+            <div class="chip" onclick="setQuery('How can I use hashtags effectively?')">Hashtag strategy?</div>
+            <div class="chip" onclick="setQuery('What KPIs should I track for social media campaigns?')">KPIs to track?</div>
+            <div class="chip" onclick="setQuery('How to handle negative comments on social media?')">Negative comments?</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="chat-container" id="chatContainer">
+          <div class="chat-msg bot">
+            <div class="chat-bubble">👋 Hi! I'm SocialMind, your AI social media assistant.<br><br>Ask me anything about social media strategy, content ideas, analytics, engagement tips, or platform best practices!<br><br>How can I help you today?</div>
+            <div class="chat-time">SocialMind · Now</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input id="chatInput" type="text" placeholder="Ask a social media question..." onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button class="btn btn-primary" id="chatBtn" onclick="sendChat()">
+            <span class="btn-text">Send</span>
+            <div class="spinner"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════ TAB 5: ANALYTICS DASHBOARD ══════════════ -->
+  <div class="tab-panel" id="tab-analytics">
+    <div class="page-title">
+      <h2>📊 Analytics Dashboard</h2>
+      <p>Interactive overview of engagement, reach, sentiment, and content performance</p>
+    </div>
+    <div class="notice notice-warn">⚠️ Dashboard shows simulated data for illustration. Connect your real analytics API (Meta, Twitter, LinkedIn) for live data.</div>
+
+    <div class="grid-3" id="analyticsStats" style="margin-bottom:20px;"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📊 Engagement Rate by Platform</div>
+        <div id="engagementByPlatform"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎭 Audience Sentiment Breakdown</div>
+        <div id="sentimentBreakdown"></div>
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📝 Posts by Content Type</div>
+        <div id="postsByType"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏷️ Top Performing Hashtags</div>
+        <div id="topHashtags"></div>
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="card">
+      <div class="card-title">📈 Weekly Reach Trend</div>
+      <div id="weeklyReach"></div>
+    </div>
+
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn btn-outline" onclick="loadAnalytics()">🔄 Refresh Dashboard</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════ TAB 6: ABOUT ══════════════ -->
+  <div class="tab-panel" id="tab-about">
+    <div class="page-title">
+      <h2>ℹ️ About SocialMind</h2>
+      <p>An ethical, AI-powered social media assistant built on IBM Granite LLM</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🚀 Features</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px;">
+          <li>✍️ <strong>Content Generator</strong> — AI posts, captions, hashtags for any platform</li>
+          <li>📅 <strong>Campaign Planner</strong> — Full strategy + 2-week content calendar</li>
+          <li>📈 <strong>Trend Analyzer</strong> — Industry trends with [PREDICTED] labels</li>
+          <li>💬 <strong>AI Chatbot</strong> — Context-aware social media Q&A assistant</li>
+          <li>📊 <strong>Analytics Dashboard</strong> — Engagement, sentiment, hashtag performance</li>
+          <li>🏷️ <strong>Hashtag Engine</strong> — Platform + goal + industry optimised tags</li>
+          <li>📆 <strong>Content Calendar</strong> — Automated posting schedule generator</li>
+          <li>⚖️ <strong>BMI for Posts</strong> — Engagement estimation before publishing</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛡️ Ethical AI Guardrails</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px;">
+          <li>🔍 <strong>Input Safety</strong> — All user inputs scanned for harmful content</li>
+          <li>🔍 <strong>Output Safety</strong> — All AI outputs validated before display</li>
+          <li>✅ <strong>Human Approval</strong> — Posts require approval before publishing</li>
+          <li>🏷️ <strong>Prediction Labels</strong> — AI predictions clearly marked [PREDICTED]</li>
+          <li>🔒 <strong>Data Privacy</strong> — No user data stored beyond session</li>
+          <li>⚠️ <strong>HAM Principles</strong> — Helpful, Accurate, Mindful in every response</li>
+          <li>🚫 <strong>Content Blocking</strong> — Hate speech, spam, deception auto-blocked</li>
+          <li>📋 <strong>Disclaimer</strong> — AI-generated label on all content</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="card">
+      <div class="card-title">🔗 API Reference</div>
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:8px; text-align:left; color:var(--muted);">Endpoint</th>
+            <th style="padding:8px; text-align:left; color:var(--muted);">Method</th>
+            <th style="padding:8px; text-align:left; color:var(--muted);">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/generate_posts</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Generate social media posts</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/campaign</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Generate campaign strategy + calendar</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/trends</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Analyze social media trends</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/chat</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">AI chatbot Q&A</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/sentiment</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Analyze text sentiment</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/hashtags</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Generate hashtags</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/approve_post</td><td style="padding:8px;">POST</td><td style="padding:8px; color:var(--muted);">Approve / reject pending post</td></tr>
+          <tr><td style="padding:8px; color:var(--accent2);">/api/analytics</td><td style="padding:8px;">GET</td><td style="padding:8px; color:var(--muted);">Fetch analytics dashboard data</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Tech Stack</div>
+      <div class="grid-3">
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">🐍</div>
+          <div style="font-size:13px; font-weight:600;">Python 3.9+</div>
+          <div style="font-size:11px; color:var(--muted);">Backend</div>
+        </div>
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">🌶️</div>
+          <div style="font-size:13px; font-weight:600;">Flask 3.x</div>
+          <div style="font-size:11px; color:var(--muted);">Web Framework</div>
+        </div>
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">🧠</div>
+          <div style="font-size:13px; font-weight:600;">IBM Granite LLM</div>
+          <div style="font-size:11px; color:var(--muted);">AI Engine</div>
+        </div>
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">☁️</div>
+          <div style="font-size:13px; font-weight:600;">IBM watsonx.ai</div>
+          <div style="font-size:11px; color:var(--muted);">AI Platform</div>
+        </div>
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">🌐</div>
+          <div style="font-size:13px; font-weight:600;">HTML5 / CSS3 / JS</div>
+          <div style="font-size:11px; color:var(--muted);">Frontend</div>
+        </div>
+        <div style="text-align:center; padding:10px;">
+          <div style="font-size:28px; margin-bottom:6px;">🔒</div>
+          <div style="font-size:13px; font-weight:600;">Ethical Guardrails</div>
+          <div style="font-size:11px; color:var(--muted);">AI Safety</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Tab Navigation ───────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'analytics') loadAnalytics();
+  });
+});
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/^## (.+)$/gm,  '<h2 style="color:var(--accent);margin:14px 0 6px;">$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3 style="color:var(--accent2);margin:10px 0 5px;">$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent2);">$1</strong>')
+    .replace(/\*(.+?)\*/g,   '<em style="color:var(--muted);">$1</em>')
+    .replace(/\[PREDICTED\]/g, '<span style="background:rgba(255,169,77,0.15);color:var(--warn);padding:1px 6px;border-radius:4px;font-size:11px;">[PREDICTED]</span>')
+    .replace(/\[TREND\]/g,    '<span style="background:rgba(81,207,102,0.15);color:var(--success);padding:1px 6px;border-radius:4px;font-size:11px;">[TREND]</span>')
+    .replace(/---/g, '<hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">')
+    .replace(/\n/g, '<br>');
+}
+
+function getPlatformBadgeClass(platform) {
+  const p = platform.toLowerCase();
+  if (p.includes('instagram')) return 'pb-instagram';
+  if (p.includes('twitter'))   return 'pb-twitter';
+  if (p.includes('linkedin'))  return 'pb-linkedin';
+  if (p.includes('facebook'))  return 'pb-facebook';
+  if (p.includes('tiktok'))    return 'pb-tiktok';
+  return 'pb-default';
+}
+
+// ── Tab 1: Generate Posts ────────────────────────────────────────────────────
+async function generatePosts() {
+  const brand_name    = document.getElementById('g-brand').value.trim();
+  const industry      = document.getElementById('g-industry').value.trim();
+  const platform      = document.getElementById('g-platform').value;
+
+  if (!brand_name || !industry || !platform) {
+    alert('Please fill in Brand Name, Industry, and Platform.');
+    return;
+  }
+
+  setLoading('genPostBtn', true);
+
+  try {
+    const resp = await fetch('/api/generate_posts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        brand_name,
+        industry,
+        platform,
+        tone:          document.getElementById('g-tone').value,
+        target_audience: document.getElementById('g-audience').value,
+        goal:          document.getElementById('g-goal').value,
+        audience_size: document.getElementById('g-audience-size').value || 10000,
+        competitors:   document.getElementById('g-competitors').value,
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+
+    // Hashtags
+    const hashtagCard = document.getElementById('hashtagCard');
+    const hashtagList = document.getElementById('hashtagList');
+    hashtagList.innerHTML = data.hashtags.map(h =>
+      `<span class="hashtag-chip" onclick="navigator.clipboard.writeText('${h}')" title="Click to copy">${h}</span>`
+    ).join('');
+    hashtagCard.style.display = 'block';
+
+    // Engagement
+    const engCard = document.getElementById('engagementCard');
+    const eng = data.engagement;
+    document.getElementById('engagementStats').innerHTML = `
+      <div class="stat-card"><div class="stat-value">${eng.estimated_likes.toLocaleString()}</div><div class="stat-label">Est. Likes</div></div>
+      <div class="stat-card"><div class="stat-value">${eng.estimated_comments.toLocaleString()}</div><div class="stat-label">Est. Comments</div></div>
+      <div class="stat-card"><div class="stat-value">${eng.estimated_reach.toLocaleString()}</div><div class="stat-label">Est. Reach</div></div>
+    `;
+    engCard.style.display = 'block';
+
+    // Approval banner
+    const banner = document.getElementById('approvalBanner');
+    banner.innerHTML = `
+      <div class="approval-banner">
+        <div class="banner-text">⚠️ Post ID: <strong>${data.post_id}</strong> — Pending human approval before publishing</div>
+        <div class="approval-actions">
+          <button class="btn btn-success btn-sm" onclick="approvePost('${data.post_id}', 'approve')">✅ Approve</button>
+          <button class="btn btn-danger btn-sm"  onclick="approvePost('${data.post_id}', 'reject')">❌ Reject</button>
+        </div>
+      </div>`;
+    banner.style.display = 'block';
+
+    // Output
+    const output = document.getElementById('postOutput');
+    output.innerHTML = renderMarkdown(data.posts);
+    output.style.display = 'block';
+
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    setLoading('genPostBtn', false);
+  }
+}
+
+async function approvePost(postId, action) {
+  const resp = await fetch('/api/approve_post', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({post_id: postId, action})
+  });
+  const data = await resp.json();
+  const banner = document.getElementById('approvalBanner');
+  const color  = action === 'approve' ? 'var(--success)' : 'var(--accent3)';
+  const icon   = action === 'approve' ? '✅' : '❌';
+  banner.innerHTML = `<div style="padding:12px 16px; background:rgba(0,0,0,0.2); border:1px solid ${color}33; border-radius:10px; color:${color}; font-size:13px;">${icon} ${data.message}</div>`;
+}
+
+// ── Tab 2: Campaign Planner ──────────────────────────────────────────────────
+async function generateCampaign() {
+  const brand_name = document.getElementById('c-brand').value.trim();
+  const industry   = document.getElementById('c-industry').value.trim();
+
+  if (!brand_name || !industry) {
+    alert('Please fill in Brand Name and Industry.');
+    return;
+  }
+
+  setLoading('genCampaignBtn', true);
+
+  try {
+    const resp = await fetch('/api/campaign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        brand_name,
+        industry,
+        platforms:       document.getElementById('c-platforms').value,
+        goal:            document.getElementById('c-goal').value,
+        period:          document.getElementById('c-period').value,
+        target_audience: document.getElementById('c-audience').value,
+        budget:          document.getElementById('c-budget').value,
+        competitors:     document.getElementById('c-competitors').value,
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+
+    // Calendar
+    const tbody = document.getElementById('calendarBody');
+    tbody.innerHTML = data.calendar.map(row => `
+      <tr>
+        <td>${row.date}</td>
+        <td><span class="platform-badge ${getPlatformBadgeClass(row.platform)}">${row.platform}</span></td>
+        <td>${row.type}</td>
+        <td>${row.time}</td>
+        <td style="color:var(--muted); font-size:11px;">${row.goal}</td>
+      </tr>
+    `).join('');
+    document.getElementById('calendarCard').style.display = 'block';
+
+    const output = document.getElementById('campaignOutput');
+    output.innerHTML = renderMarkdown(data.strategy);
+    output.style.display = 'block';
+
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    setLoading('genCampaignBtn', false);
+  }
+}
+
+// ── Tab 3: Trend Analyzer ────────────────────────────────────────────────────
+async function analyzeTrends() {
+  setLoading('trendBtn', true);
+
+  try {
+    const competitorPosts = document.getElementById('t-competitor-posts').value.trim();
+    const resp = await fetch('/api/trends', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        industry:         document.getElementById('t-industry').value,
+        platform:         document.getElementById('t-platform').value,
+        region:           document.getElementById('t-region').value,
+        competitor_posts: competitorPosts,
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+
+    // Sentiment card
+    if (data.sentiment_analysis) {
+      const s = data.sentiment_analysis;
+      const total = s.positive_score + s.negative_score || 1;
+      document.getElementById('sentimentResult').innerHTML = `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:20px; font-weight:700; margin-bottom:4px;">${s.sentiment}</div>
+          <div style="font-size:12px; color:var(--muted);">Overall Score: ${s.overall_score}%</div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:3px;">
+            <span>Positive (${s.positive_score})</span><span>Negative (${s.negative_score})</span>
+          </div>
+          <div class="sentiment-bar">
+            <div class="sb-pos" style="width:${s.positive_score / total * 100}%"></div>
+            <div class="sb-neg" style="width:${s.negative_score / total * 100}%"></div>
+          </div>
+        </div>
+      `;
+      document.getElementById('sentimentCard').style.display = 'block';
+    }
+
+    const output = document.getElementById('trendsOutput');
+    output.innerHTML = renderMarkdown(data.trends);
+    output.style.display = 'block';
+
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    setLoading('trendBtn', false);
+  }
+}
+
+// ── Tab 4: Chatbot ───────────────────────────────────────────────────────────
+function setQuery(text) {
+  document.getElementById('chatInput').value = text;
+  document.getElementById('chatInput').focus();
+}
+
+function addChatMessage(role, text) {
+  const container = document.getElementById('chatContainer');
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `
+    <div class="chat-bubble">${role === 'bot' ? renderMarkdown(text) : escapeHtml(text)}</div>
+    <div class="chat-time">${role === 'user' ? 'You' : 'SocialMind'} · ${time}</div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const query = input.value.trim();
+  if (!query) return;
+
+  addChatMessage('user', query);
+  input.value = '';
+  setLoading('chatBtn', true);
+
+  // Typing indicator
+  const container = document.getElementById('chatContainer');
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg bot';
+  typing.id = 'typingIndicator';
+  typing.innerHTML = '<div class="chat-bubble" style="color:var(--muted);">⏳ Thinking...</div>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        query,
+        brand_context: {
+          brand_name: document.getElementById('ch-brand').value,
+          industry:   document.getElementById('ch-industry').value,
+          platform:   document.getElementById('ch-platform').value,
+          goal:       document.getElementById('ch-goal').value,
+        }
+      })
+    });
+
+    const data = await resp.json();
+    document.getElementById('typingIndicator')?.remove();
+
+    if (data.error) {
+      addChatMessage('bot', 'Sorry, I encountered an error: ' + data.error);
+    } else {
+      addChatMessage('bot', data.answer);
+    }
+  } catch(e) {
+    document.getElementById('typingIndicator')?.remove();
+    addChatMessage('bot', 'Network error. Please try again.');
+  } finally {
+    setLoading('chatBtn', false);
+  }
+}
+
+// ── Tab 5: Analytics Dashboard ───────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    const resp = await fetch('/api/analytics');
+    const data = await resp.json();
+
+    // Summary stats
+    const totalReach = data.weekly_reach.reduce((a,b) => a + b.reach, 0);
+    const avgEng = (data.engagement_by_platform.reduce((a,b) => a+b.engagement_rate,0) / data.engagement_by_platform.length).toFixed(2);
+    const totalPosts = data.posts_by_type.reduce((a,b) => a+b.count, 0);
+    document.getElementById('analyticsStats').innerHTML = `
+      <div class="stat-card"><div class="stat-value">${(totalReach/1000).toFixed(0)}K</div><div class="stat-label">Total 8-Week Reach</div></div>
+      <div class="stat-card"><div class="stat-value">${avgEng}%</div><div class="stat-label">Avg Engagement Rate</div></div>
+      <div class="stat-card"><div class="stat-value">${totalPosts}</div><div class="stat-label">Total Posts Tracked</div></div>
+    `;
+
+    // Engagement by platform
+    const maxEng = Math.max(...data.engagement_by_platform.map(d => d.engagement_rate));
+    document.getElementById('engagementByPlatform').innerHTML = data.engagement_by_platform.map(d => `
+      <div class="analytics-bar-wrap">
+        <div class="analytics-bar-label"><span>${d.platform}</span><span>${d.engagement_rate}%</span></div>
+        <div class="analytics-bar-track"><div class="analytics-bar-fill" style="width:${d.engagement_rate/maxEng*100}%; background:var(--grad1);"></div></div>
+      </div>
+    `).join('');
+
+    // Sentiment
+    const s = data.sentiment_breakdown;
+    document.getElementById('sentimentBreakdown').innerHTML = `
+      <div style="display:flex; justify-content:space-around; margin-bottom:16px;">
+        <div style="text-align:center;"><div style="font-size:28px; color:var(--success); font-weight:700;">${s.positive}%</div><div style="font-size:12px; color:var(--muted);">😊 Positive</div></div>
+        <div style="text-align:center;"><div style="font-size:28px; color:var(--warn); font-weight:700;">${s.neutral}%</div><div style="font-size:12px; color:var(--muted);">😐 Neutral</div></div>
+        <div style="text-align:center;"><div style="font-size:28px; color:var(--accent3); font-weight:700;">${s.negative}%</div><div style="font-size:12px; color:var(--muted);">😞 Negative</div></div>
+      </div>
+      <div class="sentiment-bar" style="height:12px; border-radius:6px;">
+        <div class="sb-pos" style="width:${s.positive}%"></div>
+        <div class="sb-neu" style="width:${s.neutral}%"></div>
+        <div class="sb-neg" style="width:${s.negative}%"></div>
+      </div>
+    `;
+
+    // Posts by type
+    const maxPosts = Math.max(...data.posts_by_type.map(d => d.count));
+    document.getElementById('postsByType').innerHTML = data.posts_by_type.map(d => `
+      <div class="analytics-bar-wrap">
+        <div class="analytics-bar-label"><span>${d.type}</span><span>${d.count}</span></div>
+        <div class="analytics-bar-track"><div class="analytics-bar-fill" style="width:${d.count/maxPosts*100}%; background:var(--grad2);"></div></div>
+      </div>
+    `).join('');
+
+    // Top hashtags
+    const maxUses = Math.max(...data.top_hashtags.map(d => d.uses));
+    document.getElementById('topHashtags').innerHTML = data.top_hashtags.map(d => `
+      <div class="analytics-bar-wrap">
+        <div class="analytics-bar-label"><span style="color:var(--accent);">${d.tag}</span><span>${d.uses}</span></div>
+        <div class="analytics-bar-track"><div class="analytics-bar-fill" style="width:${d.uses/maxUses*100}%; background:linear-gradient(90deg,var(--accent),var(--accent2));"></div></div>
+      </div>
+    `).join('');
+
+    // Weekly reach as simple text bars
+    const maxReach = Math.max(...data.weekly_reach.map(d => d.reach));
+    document.getElementById('weeklyReach').innerHTML = `
+      <div style="display:flex; align-items:flex-end; gap:10px; height:100px;">
+        ${data.weekly_reach.map(d => `
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <div style="font-size:10px; color:var(--muted);">${(d.reach/1000).toFixed(0)}K</div>
+            <div style="width:100%; background:var(--grad1); border-radius:3px 3px 0 0; height:${Math.round(d.reach/maxReach*70)+10}px;"></div>
+            <div style="font-size:10px; color:var(--muted);">${d.week}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+  } catch(e) {
+    console.error('Analytics load error:', e);
+  }
+}
+
+// Load analytics when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // pre-load analytics in background
+  setTimeout(loadAnalytics, 500);
+});
+</script>
+
+</body>
+</html>
