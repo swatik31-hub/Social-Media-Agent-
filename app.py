@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, render_template
 from ibm_watsonx_ai import APIClient, Credentials
 from ibm_watsonx_ai.foundation_models import ModelInference
 from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
-import json, re, random
+import json, re, random, base64
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -16,13 +16,13 @@ app = Flask(__name__)
 PROJECT_ID   = "9384c26e-2697-469b-83aa-a9e78bd2d1a8"
 API_KEY      = "hX73vEDUS0ovIQgfuXdt4AnPf-tqXpOMEyD-tvx9pLAr"
 ENDPOINT_URL = "https://au-syd.ml.cloud.ibm.com"
-MODEL_ID     = "meta-llama/llama-3-3-70b-instruct"
+MODEL_ID     = "ibm/granite-3-3-8b-instruct"
 
 credentials = Credentials(url=ENDPOINT_URL, api_key=API_KEY)
 client      = APIClient(credentials=credentials, project_id=PROJECT_ID)
 
 generate_params = {
-    GenParams.MAX_NEW_TOKENS:      1200,
+    GenParams.MAX_NEW_TOKENS:      1500,
     GenParams.MIN_NEW_TOKENS:      60,
     GenParams.TEMPERATURE:         0.75,
     GenParams.TOP_P:               0.92,
@@ -183,15 +183,16 @@ def estimate_engagement(platform: str, post_type: str, audience_size: int) -> di
         "note":               "⚠️ Estimated figures — validate with real analytics.",
     }
 
-# ── Prompt Builders ────────────────────────────────────────────────────────────
-def build_post_prompt(brand: dict, hashtags: list) -> str:
+# ── Prompt Builders (IBM Granite chat format) ─────────────────────────────────
+def build_post_prompt(brand: dict, hashtags: list, image_context: str = "") -> str:
     tags_str = " ".join(hashtags[:10])
-    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are SocialMind, an expert AI social media strategist.
+    image_section = f"\n- Image Description: {image_context}" if image_context else ""
+    return f"""<|system|>
+You are SocialMind, an expert AI social media strategist built on IBM Granite.
 You follow HAM principles: Helpful, Accurate, Mindful.
 You craft engaging, ethical, brand-safe social media content.
 Never produce hateful, deceptive, or misleading content.
-<|eot_id|><|start_header_id|>user<|end_header_id|>
+<|user|>
 Create 3 unique, engaging social media posts for the following brand:
 
 - Brand Name     : {brand.get('brand_name', 'Brand')}
@@ -201,7 +202,7 @@ Create 3 unique, engaging social media posts for the following brand:
 - Brand Tone     : {brand.get('tone', 'Professional')}
 - Campaign Goal  : {brand.get('goal', 'Brand Awareness')}
 - Competitor Info: {brand.get('competitors', 'Not specified')}
-- Suggested Tags : {tags_str}
+- Suggested Tags : {tags_str}{image_section}
 
 For each post provide:
 1. Post caption (engaging, platform-optimised)
@@ -211,17 +212,17 @@ For each post provide:
 5. Content type (image/video/carousel/story suggestion)
 
 Make each post distinct in style. Be creative, brand-consistent, and audience-aware.
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+<|assistant|>
 ## Social Media Posts for {brand.get('brand_name', 'Brand')}
 """
 
 
 def build_campaign_prompt(brand: dict, calendar: list) -> str:
     cal_preview = json.dumps(calendar[:6], indent=2)
-    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are SocialMind, a professional AI campaign strategist.
+    return f"""<|system|>
+You are SocialMind, a professional AI campaign strategist built on IBM Granite.
 Follow HAM principles. Be data-informed, ethical, and actionable.
-<|eot_id|><|start_header_id|>user<|end_header_id|>
+<|user|>
 Create a detailed social media campaign strategy for:
 
 - Brand          : {brand.get('brand_name', 'Brand')}
@@ -246,17 +247,17 @@ Provide:
 7. Weekly Action Plan
 
 Be thorough, strategic, and actionable.
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+<|assistant|>
 ## Campaign Strategy for {brand.get('brand_name', 'Brand')}
 """
 
 
 def build_trend_prompt(industry: str, platform: str, region: str) -> str:
-    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are SocialMind, an AI social media trend analyst.
+    return f"""<|system|>
+You are SocialMind, an AI social media trend analyst built on IBM Granite.
 Follow HAM principles. Clearly distinguish actual trends from AI predictions.
 Label predictions with [PREDICTED] and established trends with [TREND].
-<|eot_id|><|start_header_id|>user<|end_header_id|>
+<|user|>
 Analyze current social media trends for:
 - Industry  : {industry or 'General'}
 - Platform  : {platform or 'All platforms'}
@@ -272,7 +273,7 @@ Provide:
 7. Algorithm Tips for {platform or 'major platforms'}
 
 Be specific, insightful, and actionable. Always label predictions clearly.
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+<|assistant|>
 ## Social Media Trend Report: {industry or 'General'} on {platform or 'All Platforms'}
 """
 
@@ -286,17 +287,44 @@ def build_chatbot_prompt(query: str, brand_context: dict) -> str:
             f"Platform: {brand_context.get('platform', '')}, "
             f"Goal: {brand_context.get('goal', '')}.\n"
         )
-    return f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are SocialMind, an expert AI social media assistant.
+    return f"""<|system|>
+You are SocialMind, an expert AI social media assistant built on IBM Granite.
 Follow HAM principles: Helpful, Accurate, Mindful.
 Answer social media marketing questions professionally.
 If a question is off-topic, politely redirect to social media topics.
 Never provide harmful, deceptive, or unethical advice.
-<|eot_id|><|start_header_id|>user<|end_header_id|>
+<|user|>
 {ctx}
 Question: {query}
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+<|assistant|>
 Answer:
+"""
+
+
+def build_image_analysis_prompt(image_description: str, brand: dict) -> str:
+    return f"""<|system|>
+You are SocialMind, an AI social media visual content analyst built on IBM Granite.
+Follow HAM principles. Provide constructive, specific, actionable feedback.
+<|user|>
+Analyze the following image description and suggest social media content strategy:
+
+Image Description: {image_description}
+
+Brand Context:
+- Brand Name : {brand.get('brand_name', 'Brand')}
+- Industry   : {brand.get('industry', 'General')}
+- Platform   : {brand.get('platform', 'Instagram')}
+- Goal       : {brand.get('goal', 'Brand Awareness')}
+
+Provide:
+1. Image Suitability Score (1–10) for the platform
+2. Suggested Caption
+3. Recommended Hashtags (10–12)
+4. Visual Enhancement Tips
+5. Content Repurposing Ideas for other platforms
+6. Best posting time
+<|assistant|>
+## Image Content Analysis
 """
 
 
@@ -317,7 +345,7 @@ def generate_posts():
             return jsonify({"error": f"Field '{field}' is required."}), 400
 
     # Guardrail: input check
-    combined = " ".join(str(v) for v in data.values())
+    combined = " ".join(str(v) for v in data.values() if isinstance(v, str))
     if guardrail_check(combined):
         return jsonify({"error": "Input contains potentially harmful content. Please revise."}), 400
 
@@ -333,8 +361,11 @@ def generate_posts():
     audience = int(data.get("audience_size") or 10000)
     engagement = estimate_engagement(data.get("platform", "Instagram"), "post", audience)
 
+    # Image context (if provided as base64 or description)
+    image_context = data.get("image_description", "").strip()
+
     try:
-        prompt   = build_post_prompt(data, hashtags)
+        prompt   = build_post_prompt(data, hashtags, image_context)
         response = model.generate_text(prompt=prompt)
         posts    = response.strip()
 
@@ -539,6 +570,39 @@ def analytics_dashboard():
         "note": "⚠️ Figures are simulated for illustration. Connect your real analytics API for live data.",
     }
     return jsonify(data)
+
+
+@app.route("/api/analyze_image", methods=["POST"])
+def analyze_image():
+    """Analyze uploaded image/description for social media content strategy."""
+    data = request.get_json(silent=True) or {}
+    image_description = str(data.get("image_description", "")).strip()
+
+    if not image_description:
+        return jsonify({"error": "Image description is required."}), 400
+
+    if guardrail_check(image_description):
+        return jsonify({"error": "Content contains potentially harmful material."}), 400
+
+    brand = {
+        "brand_name": data.get("brand_name", "Brand"),
+        "industry":   data.get("industry", "General"),
+        "platform":   data.get("platform", "Instagram"),
+        "goal":       data.get("goal", "Brand Awareness"),
+    }
+
+    try:
+        prompt   = build_image_analysis_prompt(image_description, brand)
+        response = model.generate_text(prompt=prompt)
+        analysis = response.strip()
+
+        if guardrail_check(analysis):
+            analysis = "Unable to analyze image safely. Please try again."
+
+        analysis += ETHICS_DISCLAIMER
+        return jsonify({"analysis": analysis})
+    except Exception as e:
+        return jsonify({"error": f"Model error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

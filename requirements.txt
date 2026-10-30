@@ -1,8 +1,20 @@
+# ============================================================
 # SocialMind — Python Dependencies
-# Install with: pip install -r requirements.txt
+# ============================================================
+# Install with:  pip install -r requirements.txt
+# ============================================================
 
-# ── Web Framework ──────────────────────────────────────
+# ── Web Framework ─────────────────────────────────────────
 flask>=3.0.0
 
-# ── IBM watsonx.ai SDK ─────────────────────────────────
+# ── IBM watsonx.ai SDK ────────────────────────────────────
 ibm-watsonx-ai>=1.1.2
+
+# ── IBM Cloud Core (auth, credentials) ───────────────────
+ibm-cloud-sdk-core>=3.18.0
+
+# ── Production WSGI Server (optional, for deployment) ─────
+# gunicorn>=21.2.0
+
+# ── Environment variable management (optional) ────────────
+# python-dotenv>=1.0.0
